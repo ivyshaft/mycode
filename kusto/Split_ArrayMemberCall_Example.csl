@@ -1,0 +1,5 @@
+// Example of splitting ResoureId on "/" and selecting last member of created array, then convert to string for tabular operations
+Heartbeat
+| extend CleanName = tostring(split(ResourceId, "/")[-1])
+| summarize arg_max(TimeGenerated, *) by CleanName
+| project-reorder CleanName

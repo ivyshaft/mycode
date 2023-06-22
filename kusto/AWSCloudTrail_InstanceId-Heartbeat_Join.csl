@@ -1,0 +1,15 @@
+// Set Variables, Parse JSON
+let timeago = ago(3d);
+let awsmachines = (AWSCloudTrail
+| where TimeGenerated > timeago
+| extend Computer = parse_json(RequestParameters).computerName
+| extend instanceId = parse_json(RequestParameters).instanceId
+| where isnotempty(Computer)
+| summarize LastCheckIn = arg_max(TimeGenerated, *) by tostring(Computer));
+let heartbeats = (Heartbeat
+| where TimeGenerated > timeago
+| summarize arg_max(TimeGenerated, *) by Computer);
+// Join tables, reorder columns
+heartbeats
+| join awsmachines on Computer
+| project-reorder Computer, instanceId

@@ -1,0 +1,57 @@
+// Counts machines with good and bad values and returns percentage of total for each (WUfB)
+let timeago = ago(3d);
+let NegativeOne = todecimal(toscalar(WaaSUpdateStatus
+    | where TimeGenerated > timeago
+    | summarize arg_max(TimeGenerated, *) by DeviceName
+    | where FeatureDeferralDays == "-1"
+    | count));
+let NotNegativeOne = todecimal(toscalar(WaaSUpdateStatus
+    | where TimeGenerated > timeago
+    | summarize arg_max(TimeGenerated, *) by DeviceName
+    | where FeatureDeferralDays != "-1"
+    | count));
+let Total = todecimal(toscalar(WaaSUpdateStatus
+    | where TimeGenerated > timeago
+    | summarize arg_max(TimeGenerated, *) by DeviceName
+    | count));
+print NotNegativeOne = NotNegativeOne, NegativeOne = NegativeOne
+| extend Total = Total
+| extend 
+    GoodMachines = strcat(round(((NotNegativeOne / Total) * 100), 2), "%"),
+    BadMachines = strcat(round(((NegativeOne / Total) * 100), 2), "%")
+| project-reorder GoodMachines, BadMachines, NotNegativeOne, NegativeOne, Total
+
+// ---------------------------------------------------------------------------------------
+
+// Counts machines with good and bad values and returns percentage of total for each (WUfB)
+let timeago = ago(3d);
+let basesearch = UCClient
+    | where TimeGenerated > timeago
+    | summarize arg_max(TimeGenerated, *) by DeviceName;
+let NegativeOne = todecimal(toscalar(basesearch
+    | where WUQualityDeadlineDays == "-1"
+        and WUFeatureDeadlineDays == "-1"
+        and WUFeatureGracePeriodDays == "-1"
+        and WUQualityGracePeriodDays == "-1"
+    | count));
+let NotNegativeOne = todecimal(toscalar(basesearch
+    | where WUQualityDeadlineDays != "-1"
+        or WUFeatureDeadlineDays != "-1"
+        or WUQualityGracePeriodDays != "-1"
+        or WUFeatureGracePeriodDays != "-1"
+    | count));
+let Total = todecimal(toscalar(basesearch
+    | count));
+print NotNegativeOne = NotNegativeOne, NegativeOne = NegativeOne, Total = Total
+| extend 
+    GoodMachines = strcat(round(((NotNegativeOne / Total) * 100), 2), "%",  " (", NotNegativeOne, ")"),
+    BadMachines = strcat(round(((NegativeOne / Total) * 100), 2), "%", " (", NegativeOne, ")")
+| project GoodMachines, BadMachines, Total
+
+// ---------------------------------------------------------------------------------------
+
+// Counts machines by ReadinessStatus, ReadinessReason
+UCClientReadinessStatus
+| where TimeGenerated > ago(3d)
+| summarize Last_Check_in = arg_max(TimeGenerated, *) by DeviceName
+| summarize Count = count() by ReadinessStatus

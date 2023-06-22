@@ -1,0 +1,29 @@
+// Produces a timechart to see when certain tables began reporting, ingestion volume over time
+let February = search *
+| where TimeGenerated >= startofday(datetime(02-01-2023))
+and TimeGenerated <= startofday(datetime(03-01-2023));
+let March= search *
+| where TimeGenerated >= startofday(datetime(03-01-2023))
+and TimeGenerated <= startofday(datetime(04-01-2023))
+| extend Bin = bin(TimeGenerated, 2h);
+// February
+March
+| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024), 3) by Bin, _ResourceId, $table
+| sort by tostring(Bin) asc
+| project Bin, GB, Table = $table, _ResourceId
+| render timechart with (series = Table, GB, Bin)
+ 
+// Here is another query to break down the ingestion another way, just by ResourceId.
+
+// Produces a table of values showing the highest ingestion resources
+let February = search *
+| where TimeGenerated >= startofday(datetime(02-01-2023))
+and TimeGenerated <= startofday(datetime(03-01-2023));
+let March= search *
+| where TimeGenerated >= startofday(datetime(03-01-2023))
+and TimeGenerated <= startofday(datetime(04-01-2023));
+// February
+March
+| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024), 3) by _ResourceId
+| project GB, _ResourceId
+| sort by GB desc

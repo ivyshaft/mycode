@@ -1,0 +1,1 @@
+| where TimeGenerated between(todatetime("2/3/2023, 15:00:00")..todatetime("2/3/2023, 16:00:00"))

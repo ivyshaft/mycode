@@ -1,0 +1,9 @@
+SigninLogs
+| where TimeGenerated between(now(-15m)..now())
+| where Identity != "crm_portal_noninteractive"
+and Identity != "crm_non_interactive"
+| summarize count() by IPAddress, MinuteGrain = bin(TimeGenerated, 1m), Identity
+| extend MinuteAggregate_EST = datetime_utc_to_local(MinuteGrain, "US/Eastern")
+| project-away MinuteGrain
+| project-reorder MinuteAggregate_EST
+| where count_ >= 10

@@ -1,0 +1,29 @@
+// Test Agent Latency 
+Heartbeat
+| where TimeGenerated > ago(48h)
+| extend 
+    Latency = format_timespan((_TimeReceived - TimeGenerated), "dd:hh:mm:sssss")
+| summarize 
+    AvgLatency = min(Latency) by Computer
+| sort
+    by AvgLatency desc
+
+
+// Test Workspace AppInsights Latency
+let timeago = ago(7d);
+let timegrain = 10m;
+let latencylimit = 2h;
+AppSystemEvents
+| join kind=fullouter AppDependencies on _ResourceId
+| where TimeGenerated > timeago
+| extend Bin = bin(TimeGenerated, timegrain)
+| extend 
+    Latency = totimespan(_TimeReceived - TimeGenerated)
+| summarize 
+    AvgLatencyHours = avg(Latency)
+    by Bin
+| where AvgLatencyHours > latencylimit
+| top 5
+by AvgLatencyHours desc
+| extend AvgLatencyHours = format_timespan(AvgLatencyHours, "[d] hh:mm.ss")
+

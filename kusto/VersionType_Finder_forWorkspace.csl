@@ -1,0 +1,14 @@
+// Get last check-in time by Computer
+Heartbeat 
+| where TimeGenerated > ago(7d)
+| summarize LastCheckin = arg_max(TimeGenerated, *) by Computer
+
+//----------------------------------------------------------------
+
+// v2 VersionType_Finder
+Heartbeat 
+| where TimeGenerated > ago(7d)
+| summarize arg_max(TimeGenerated, *) by Computer, Category, Version
+| extend catver = bag_pack(Category, Version)
+| summarize Versions = make_bag(catver) by Computer
+| sort by Computer
