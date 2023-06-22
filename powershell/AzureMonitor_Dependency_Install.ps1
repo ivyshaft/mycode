@@ -1,5 +1,5 @@
-$VMRG = "AzMonVMS"
-$vmName = "WinServerB"
+$VMRG = [rgname]
+$vmName = [vmname]
 $vm = Get-AzVM -ResourceGroupName $VMRG -Name $vmName
 $location = $vm.location
 Set-AzVMExtension -ExtensionName "Microsoft.Azure.Monitoring.DependencyAgent" `
