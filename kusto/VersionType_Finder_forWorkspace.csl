@@ -5,10 +5,12 @@ Heartbeat
 
 //----------------------------------------------------------------
 
-// v2 VersionType_Finder
-Heartbeat 
+// v3 VersionType_Finder
+Heartbeat
 | where TimeGenerated > ago(7d)
 | summarize arg_max(TimeGenerated, *) by Computer, Category, Version
-| extend catver = bag_pack(Category, Version)
-| summarize Versions = make_bag(catver) by Computer
-| sort by Computer
+| extend Category_Version_Bag = bag_pack("Category", Category, "Version", Version)
+| sort by Category asc
+| summarize Version_List = make_list(Category_Version_Bag) by Computer
+| sort by Computer asc
+
