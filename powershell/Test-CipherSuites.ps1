@@ -1,4 +1,4 @@
-# Test matching suites to an endpoint
+# Test matching suites to an endpoint (Requires NMAP installed)
 $homepath = (Get-Location).Path
 $filepath = ($homepath + "\" + (HOSTNAME.EXE)  + "_CipherSuites" + "_" + (Get-Date -Format "MMddyy_hhmm") + ".txt")
 $endpoint = $args[0]
