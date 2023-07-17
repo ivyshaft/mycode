@@ -1,4 +1,7 @@
-# Test matching suites to an endpoint (Requires NMAP installed)
+# Test matching suites to an endpoint
+# Run by calling the file from a PowerShell terminal and an argument with and endpoint like this:
+    # .\Test-CipherSuites.ps1 "linkedin.com"
+    # A file will be produced in the current directory with the results of matching suites on the host
 
 # Set Variables and ask for argument
 $homepath = (Get-Location).Path
