@@ -1,0 +1,18 @@
+SigninLogs 
+| where AppDisplayName == "Office 365 Exchange Online" 
+    and Status.errorCode != 0 
+| extend 
+    Failure_Reason = Status.failureReason,
+    Error_Code = Status.errorCode
+| extend 
+    Other_Codes = iff(Error_Code == "2205013", "Code 2205013. CRL download timed out.", "No other codes")
+| project-reorder
+    AppDisplayName,
+    UserPrincipalName,
+    TimeGenerated,
+    Failure_Reason,
+    Error_Code,
+    Other_Codes    
+
+// https://learn.microsoft.com/en-us/azure/active-directory/develop/reference-error-codes#lookup-current-error-code-information
+// https://login.microsoftonline.com/error

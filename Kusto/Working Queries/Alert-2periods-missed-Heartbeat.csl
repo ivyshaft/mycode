@@ -1,0 +1,14 @@
+let StepGrain = 2m;
+let Lookback = ago(30m) - StepGrain;
+let Computers = (Heartbeat | where TimeGenerated > ago(365d) | summarize arg_max(TimeGenerated, *) by Computer);
+Heartbeat
+| where TimeGenerated > Lookback
+| union Computers
+| make-series RecordCount = count() default=0 on TimeGenerated step StepGrain by Computer
+| mv-expand RecordCount, TimeGenerated
+| extend todatetime(TimeGenerated), toint(RecordCount)
+| where RecordCount < 1 or TimeGenerated < (Lookback - StepGrain)
+| summarize Empty_2m_Periods = count() by Computer, Bin = bin(TimeGenerated, 30m)
+| where Empty_2m_Periods > 1 
+    or Bin < Lookback
+| sort by tostring(Computer) asc

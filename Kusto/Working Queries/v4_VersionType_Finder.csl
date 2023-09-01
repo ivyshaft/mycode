@@ -1,0 +1,12 @@
+// v4 VersionType_Finder
+Heartbeat
+| where TimeGenerated > ago(7d)
+// | where Computer == "vm_name"
+| summarize arg_max(TimeGenerated, *) by Computer, Category, Version
+| extend Category_Version_Bag = bag_pack("Category", Category, "Version", Version, "LastHeartbeat", format_datetime(TimeGenerated, "M/dd/yyyy h:mm:ss tt"))
+    | sort by Category asc
+| summarize Version_List = make_list(Category_Version_Bag) by Computer
+    | extend Array_Length = array_length(Version_List)
+    | extend Multiple_Versions = iff(Array_Length > 1, true, false)
+    | sort by Multiple_Versions, Computer asc
+    | project Computer, Multiple_Versions, Version_List

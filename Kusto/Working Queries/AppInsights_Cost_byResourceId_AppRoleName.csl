@@ -1,0 +1,36 @@
+union AppAvailabilityResults,
+      AppBrowserTimings,
+      AppDependencies,
+      AppExceptions,
+      AppEvents,
+      AppMetrics,
+      AppPageViews,
+      AppPerformanceCounters,
+      AppRequests,
+      AppSystemEvents,
+      AppTraces
+| where TimeGenerated >= startofday(ago(7d)) and TimeGenerated < startofday(now())
+| summarize sum(_BilledSize) by _ResourceId, bin(TimeGenerated, 1d)
+
+// -----------------------------------------------------------------------------------
+
+// By AppRoleName (Cloud Instance/Role)
+union AppAvailabilityResults,
+    AppBrowserTimings,
+    AppDependencies,
+    AppExceptions,
+    AppEvents,
+    AppMetrics,
+    AppPageViews,
+    AppPerformanceCounters,
+    AppRequests,
+    AppSystemEvents,
+    AppTraces
+| where TimeGenerated >= ago(30d)
+| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024),1) by _ResourceId, AppRoleName
+| sort by GB desc
+| extend ResourceName = tostring(split(_ResourceId, "/")[-1])
+| project-reorder _ResourceId, ResourceName
+
+// -----------------------------------------------------------------------------------
+

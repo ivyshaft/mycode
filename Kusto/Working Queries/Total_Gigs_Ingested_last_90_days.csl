@@ -1,0 +1,4 @@
+Usage
+| where TimeGenerated > ago(90d)
+| summarize MBytes = sum(Quantity)
+| project Total_Gigs_ingested_last_90_days = round(MBytes / 1024, 3)

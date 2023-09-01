@@ -1,0 +1,21 @@
+// Make machine list
+AzureActivity
+| where TimeGenerated > ago(90d) // change to 365 days after extending retention on the AzureActivity Table
+    and _ResourceId has "microsoft.compute/virtualmachines"
+    and tolower(OperationNameValue) has "microsoft.compute/virtualmachines/start"
+    or tolower(OperationNameValue) has "microsoft.compute/virtualmachines/deallocate"
+| summarize CurrentMachines = arg_max(TimeGenerated, *) by ResourceId = tostring(split(_ResourceId, "/")[-1])
+
+// Make unmonitored machine list
+let timeago = ago(30d);
+AzureActivity
+| where TimeGenerated > timeago
+    and _ResourceId has "microsoft.compute/virtualmachines"
+    and tolower(OperationNameValue) has "microsoft.compute/virtualmachines/start"
+    or tolower(OperationNameValue) has "microsoft.compute/virtualmachines/deallocate"
+| summarize Latest_Activity = arg_max(TimeGenerated, *) by Computer = tostring(split(_ResourceId, "/")[-1])
+| join kind=leftanti 
+    (Heartbeat
+    | where TimeGenerated > timeago
+    | summarize Latest_Heartbeats = arg_max(TimeGenerated, *) by Computer = tostring(split(_ResourceId, "/")[-1])) on Computer
+| project Unmonitored_Computers = Computer, Latest_Activity, OperationNameValue, _ResourceId

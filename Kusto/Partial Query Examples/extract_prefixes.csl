@@ -1,0 +1,17 @@
+// Set time range
+// Set number of digits that your prefixes follow
+// Set your prefixes
+// Run query
+// Filter based on the set time range
+// Extract first "i" number of letters from each Computer name into new column called prefix
+// Filter for machines with their prefix in i_letter_prefixes
+// Get the last heartbeat from each Computer that matches one of the prefixes in the list
+ 
+let timeago = ago(3d);
+let i = "{4}";
+let i_letter_prefixes = dynamic(["wins", "demo"]);
+Heartbeat
+| where TimeGenerated > timeago
+| extend prefix = extract(strcat("[a-z]", i) , 0, tolower(Computer))
+| where prefix in(i_letter_prefixes)
+| summarize Last_Heartbeat = arg_max(TimeGenerated, prefix) by Computer

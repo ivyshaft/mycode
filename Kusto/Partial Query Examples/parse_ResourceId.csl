@@ -1,0 +1,1 @@
+| parse _ResourceId with * "/subscriptions/" SubscriptionId "/resourcegroups/" ResourceGroup "/providers/" Provider "/" ResourceType "/" ResourceName

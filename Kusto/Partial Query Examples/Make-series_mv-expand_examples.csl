@@ -1,0 +1,9 @@
+[tablename]
+| make-series RecordCount = count() default=0 on TimeGenerated from ago(365d) to now() step 1d // by [column]
+| mv-expand RecordCount, TimeGenerated
+| extend todatetime(TimeGenerated), toint(RecordCount)
+| sort by TimeGenerated asc
+| render timechart
+
+// https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/mvexpandoperator
+// https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/make-seriesoperator

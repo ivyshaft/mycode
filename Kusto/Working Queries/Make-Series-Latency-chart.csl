@@ -1,0 +1,4 @@
+VMComputer
+| make-series Latency = avg(_TimeReceived - TimeGenerated)/1m default=0
+on TimeGenerated from ago(3d) to now() step 1h by Computer
+| render timechart

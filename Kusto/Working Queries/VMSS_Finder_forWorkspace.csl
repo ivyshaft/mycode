@@ -1,0 +1,44 @@
+// Finds most recent heartbeat from each VMSS connected to the workspace, shows agent Category
+Heartbeat
+| where _ResourceId contains "vmss"
+| where TimeGenerated > ago(24h)
+| extend VMSS = tostring(split(ResourceId, "/")[-3])
+| extend TimeEST = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+| project-reorder VMSS, TimeEST, Category, Computer
+| summarize arg_max(TimeGenerated, *) by VMSS
+| project-away _ResourceId, TimeGenerated
+| order by VMSS desc
+
+// Makes a list of instances(computers) for each VMSS connected to the workspace
+Heartbeat
+| where TimeGenerated > ago(24h)
+and _ResourceId contains "vmss"
+| extend VMSS = tostring(split(ResourceId, "/")[-3])
+| extend TimeEST = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+| project-reorder VMSS, TimeEST, Category, Computer
+| distinct VMSS, Computer
+| summarize VMSSmembers = make_list(Computer) by VMSS
+| order by VMSS desc
+
+// Checks records from a specific VMSS and shows Category
+Heartbeat
+| where _ResourceId contains "vmss"
+| where TimeGenerated > ago(24h)
+| extend VMSS = tostring(split(ResourceId, "/")[-3])
+| extend TimeEST = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+| project-reorder VMSS, TimeEST, Category, Computer
+| project-away _ResourceId, TimeGenerated
+| order by VMSS desc
+| where VMSS == "vmss-smbc-devops-sf"
+
+// Find all VMSS that are reporting with the AMA agent
+Heartbeat
+| where _ResourceId contains "vmss"
+| where TimeGenerated > ago(24h)
+| extend VMSS = tostring(split(ResourceId, "/")[-3])
+| extend TimeEST = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+| project-reorder VMSS, TimeEST, Category, Computer
+| project-away _ResourceId, TimeGenerated
+| distinct VMSS, Category
+| summarize Agent_Types = make_list(Category) by VMSS
+| where tostring(Agent_Types) contains "Azure Monitor Agent"
