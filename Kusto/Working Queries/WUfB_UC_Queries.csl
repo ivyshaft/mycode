@@ -1,4 +1,4 @@
-// Counts machines with good and bad values and returns percentage of total for each (WUfB)
+// Counts machines with good and bad values and returns percentage of total for each (Update Compliance)
 let timeago = ago(3d);
 let NegativeOne = todecimal(toscalar(WaaSUpdateStatus
     | where TimeGenerated > timeago
@@ -44,7 +44,7 @@ let Total = todecimal(toscalar(basesearch
     | count));
 print NotNegativeOne = NotNegativeOne, NegativeOne = NegativeOne, Total = Total
 | extend 
-    GoodMachines = strcat(round(((NotNegativeOne / Total) * 100), 2), "%",  " (", NotNegativeOne, ")"),
+    GoodMachines = strcat(round(((NotNegativeOne / Total) * 100), 2), "%", " (", NotNegativeOne, ")"),
     BadMachines = strcat(round(((NegativeOne / Total) * 100), 2), "%", " (", NegativeOne, ")")
 | project GoodMachines, BadMachines, Total
 

@@ -1,0 +1,13 @@
+// Dynamic variable has_any() example
+let apple = dynamic(["vmname00", "vmname01", "vmname02"]);
+Heartbeat 
+| where TimeGenerated > ago(30m)
+| summarize LastCheckin = arg_max(TimeGenerated, *) by Computer
+| where Computer has_any(apple)
+
+// Dynamic variable in() example
+let apple = dynamic(["vmname00", "vmname01", "vmname02"]);
+Heartbeat 
+| where TimeGenerated > ago(30m)
+| summarize LastCheckin = arg_max(TimeGenerated, *) by Computer
+| where Computer in(apple)

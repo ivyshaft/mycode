@@ -1,0 +1,4 @@
+// Example of extract function and using regex to parse the timestamp from RawData field
+[tablename]
+| extend HostTimeGenerated = extract("[0-9]*[\\s]([0-9]*[:])*[0-9]*", 0, RawData, typeof(datetime))
+| project-reorder HostTimeGenerated, TimeGenerated

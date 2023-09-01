@@ -4,7 +4,7 @@ Heartbeat
 | extend 
     Latency = format_timespan((_TimeReceived - TimeGenerated), "dd:hh:mm:sssss")
 | summarize 
-    AvgLatency = min(Latency) by Computer
+    AvgLatency = avg(Latency) by Computer
 | sort
     by AvgLatency desc
 

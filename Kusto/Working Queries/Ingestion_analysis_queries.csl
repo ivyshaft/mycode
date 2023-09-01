@@ -18,12 +18,13 @@ March
 // Produces a table of values showing the highest ingestion resources
 let February = search *
 | where TimeGenerated >= startofday(datetime(02-01-2023))
-and TimeGenerated <= startofday(datetime(03-01-2023));
+and TimeGenerated <= startofday(datetime(03-01-2023))
+| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024), 3) by _ResourceId;
 let March= search *
 | where TimeGenerated >= startofday(datetime(03-01-2023))
-and TimeGenerated <= startofday(datetime(04-01-2023));
+and TimeGenerated <= startofday(datetime(04-01-2023))
+| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024), 3) by _ResourceId;
 // February
 March
-| summarize GB = round((sum(_BilledSize) / 1024 / 1024 / 1024), 3) by _ResourceId
 | project GB, _ResourceId
 | sort by GB desc

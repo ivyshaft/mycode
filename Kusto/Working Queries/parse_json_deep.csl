@@ -1,0 +1,4 @@
+// Parsing 2 levels deep into JSON
+AzureActivity
+| where TimeGenerated > ago(3d)
+| extend Description = parse_json(tostring(Properties_d.EventProperties)).Description

@@ -1,5 +1,5 @@
 SigninLogs
-| where TimeGenerated between(now(-15m)..now())
+| where TimeGenerated > ago(15m)
 | where Identity != "crm_portal_noninteractive"
 and Identity != "crm_non_interactive"
 | summarize count() by IPAddress, MinuteGrain = bin(TimeGenerated, 1m), Identity

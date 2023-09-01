@@ -1,0 +1,88 @@
+// Global time filter
+let timeago = ago(30m);
+
+// Created variable for repetitive union that is used throughout query. Added time filters on global time filter.
+let basesearch = materialize(union ADFSandboxPipelineRun, ADFPipelineRun | where TimeGenerated > timeago
+    | extend Resource = tostring(split(ResourceId,"/")[-1])
+    | extend    PredecessorsObject = parse_json(Parameters));
+
+// Created variable for repetitive union that is used throughout query. Added time filters on global time filter.
+let basesearch2 = materialize(union ADFSandboxActivityRun, ADFActivityRun |  where TimeGenerated > timeago
+    | extend    PredecessorsObject = parse_json(Output)
+    | where (tostring(PredecessorsObject.pipelineRunId) !=""));
+
+// Simplified join syntax where possible, performed final project and distinct within the variable
+let Level1_CTE = materialize(basesearch
+    | extend    InputFeedName = tostring(PredecessorsObject.FeedName)
+    | project MasterPipelineRunId = RunId, MasterPipelineName = PipelineName, PipelineLevel =1, PipelineRunId = RunId,PipelineName, TimeGenerated,StartTime = Start,  EndTime = End,TimeInSeconds = datetime_diff("Second",End, Start), Level = Level, Status, Message = EventMessage, FailureType, InputParameters = tostring(Parameters),InputFeedName, Resource
+    | join kind=leftouter
+        (basesearch2
+        | project MasterPipelineRunId = PipelineRunId, NextLevelRunId = tostring(PredecessorsObject.pipelineRunId)) 
+        on MasterPipelineRunId
+    | project MasterPipelineRunId,MasterPipelineName,PipelineLevel,PipelineRunId,PipelineName,TimeGenerated,StartTime,EndTime,TimeInSeconds,Level,Status,Message,FailureType,NextLevelRunId, PreviousLevelRunId = "",InputParameters,InputFeedName, Resource
+    | distinct *);
+
+// Simplified join syntax where possible, performed final project and distinct within the variable
+let Level2_CTE = materialize(Level1_CTE
+    | join kind=leftouter
+    (basesearch
+    | extend    InputFeedName2 = tostring(PredecessorsObject.FeedName)
+    | project MasterPipelineRunId = "", MasterPipelineName = "", PipelineLevel2 =2, PipelineRunId2 = RunId,PipelineName2 = PipelineName, TimeGenerated2=TimeGenerated,StartTime2 = Start,  EndTime2 = End,TimeInSeconds2 = datetime_diff("Second",End, Start), Level2 = Level, Status2 = Status, Message2 = EventMessage, FailureType2 = FailureType, InputParameters2 = tostring(Parameters),InputFeedName2, Resource
+    | join kind=leftouter
+        (basesearch2
+        | project PipelineRunId2 = PipelineRunId, NextLevelRunId2 = tostring(PredecessorsObject.pipelineRunId)) 
+        on PipelineRunId2
+    )  on $left.NextLevelRunId==$right.PipelineRunId2
+    | project MasterPipelineRunId,MasterPipelineName,PipelineLevel=PipelineLevel2,PipelineRunId=PipelineRunId2,PipelineName=PipelineName2,TimeGenerated=TimeGenerated2,StartTime=StartTime2,EndTime=EndTime2,TimeInSeconds=TimeInSeconds2,Level=Level2,Status=Status2,Message=Message2,FailureType=FailureType2,NextLevelRunId=NextLevelRunId2,PreviousLevelRunId =MasterPipelineRunId,InputParameters = InputParameters2,InputFeedName = InputFeedName2, Resource
+    | distinct *);
+
+// Simplified join syntax where possible, performed final project and distinct within the variable
+let Level3_CTE = materialize(Level2_CTE
+    | join kind=leftouter
+    (basesearch
+    | extend    InputFeedName3 = tostring(PredecessorsObject.FeedName)
+    | project MasterPipelineRunId = "", MasterPipelineName = "", PipelineLevel3 =3, PipelineRunId3 = RunId,PipelineName3 = PipelineName, TimeGenerated3=TimeGenerated,StartTime3 = Start,  EndTime3 = End,TimeInSeconds3 = datetime_diff("Second",End, Start), Level3 = Level, Status3 = Status, Message3 = EventMessage, FailureType3 = FailureType, InputParameters3 = tostring(Parameters),InputFeedName3, Resource
+    | join kind=leftouter
+        (basesearch2
+        | project PipelineRunId3 = PipelineRunId, NextLevelRunId3 = tostring(PredecessorsObject.pipelineRunId)) 
+        on PipelineRunId3
+    )  on $left.NextLevelRunId==$right.PipelineRunId3
+    | project MasterPipelineRunId,MasterPipelineName,PipelineLevel=PipelineLevel3,PipelineRunId=PipelineRunId3,PipelineName=PipelineName3,TimeGenerated=TimeGenerated3,StartTime=StartTime3,EndTime=EndTime3,TimeInSeconds=TimeInSeconds3,Level=Level3,Status=Status3,Message=Message3,FailureType=FailureType3,NextLevelRunId=NextLevelRunId3,PreviousLevelRunId =PipelineRunId,InputParameters = InputParameters3,InputFeedName = InputFeedName3, Resource
+    | distinct *); 
+
+// Simplified join syntax where possible, performed final project and distinct within the variable
+// Added extend for InputFeedName4 as it was missing, projected InputFeedName4 as InputFeedName
+let Level4_CTE = materialize(Level3_CTE
+    | join kind=leftouter
+    (basesearch
+    | extend    InputFeedName4 = tostring(PredecessorsObject.FeedName)
+    | project MasterPipelineRunId = "", MasterPipelineName = "", PipelineLevel4 =4, PipelineRunId4 = RunId,PipelineName4 = PipelineName, TimeGenerated4=TimeGenerated,StartTime4 = Start,  EndTime4 = End,TimeInSeconds4 = datetime_diff("Second",End, Start), Level4 = Level, Status4 = Status, Message4 = EventMessage, FailureType4 = FailureType, InputParameters4 =  tostring(Parameters),InputFeedName4, Resource
+    | join kind=leftouter
+        (basesearch2
+        | project PipelineRunId4 = PipelineRunId, NextLevelRunId4 = tostring(PredecessorsObject.pipelineRunId)) 
+        on PipelineRunId4
+    )  on $left.NextLevelRunId==$right.PipelineRunId4
+    | project MasterPipelineRunId,MasterPipelineName,PipelineLevel=PipelineLevel4,PipelineRunId=PipelineRunId4,PipelineName=PipelineName4,TimeGenerated=TimeGenerated4,StartTime=StartTime4,EndTime=EndTime4,TimeInSeconds=TimeInSeconds4,Level=Level4,Status=Status4,Message=Message4,FailureType=FailureType4,NextLevelRunId=NextLevelRunId4,PreviousLevelRunId =PipelineRunId,InputParameters = InputParameters4,InputFeedName = InputFeedName4, Resource
+    | distinct *); 
+
+// Simplified join syntax where possible, performed final project and distinct within the variable
+// Added extend for InputFeedName5 as it was missing, projected InputFeedName5 as InputFeedName
+let Level5_CTE = materialize(Level4_CTE
+    | join kind=leftouter
+    (basesearch
+    | extend    InputFeedName5 = tostring(PredecessorsObject.FeedName)
+    | project MasterPipelineRunId = "", MasterPipelineName = "", PipelineLevel5 =5, PipelineRunId5 = RunId,PipelineName5 = PipelineName, TimeGenerated5=TimeGenerated,StartTime5 = Start,  EndTime5 = End,TimeInSeconds5 = datetime_diff("Second",End, Start), Level5 = Level, Status5 = Status, Message5 = EventMessage, FailureType5 = FailureType, InputParameters5 = tostring(Parameters), InputFeedName5, Resource
+    | join kind=leftouter
+        (basesearch2
+        | project PipelineRunId5 = PipelineRunId, NextLevelRunId5 = tostring(PredecessorsObject.pipelineRunId)) 
+        on PipelineRunId5
+    )  on $left.NextLevelRunId==$right.PipelineRunId5
+    | project MasterPipelineRunId,MasterPipelineName,PipelineLevel=PipelineLevel5,PipelineRunId=PipelineRunId5,PipelineName=PipelineName5,TimeGenerated=TimeGenerated5,StartTime=StartTime5,EndTime=EndTime5,TimeInSeconds=TimeInSeconds5,Level=Level5,Status=Status5,Message=Message5,FailureType=FailureType5,NextLevelRunId=NextLevelRunId5,PreviousLevelRunId =PipelineRunId,InputParameters = InputParameters5,InputFeedName = InputFeedName5, Resource
+    | distinct *); 
+
+// Changed union syntax, removed distinct as it's in the variables now
+// Changed TimeGenerated where filter to utilize global time filter
+union Level1_CTE, Level2_CTE, Level3_CTE, Level4_CTE, Level5_CTE
+| where ((PipelineLevel != "") and TimeGenerated > timeago)
+| sort by StartTime asc  
+| project FeedName = InputFeedName, MasterPipelineRunId, PipelineRunId, PipelineName, PipelineLevel, InputParameters, DurationSecs =iff(TimeInSeconds < 0 , -1 , TimeInSeconds) , ExecutionStatus = Status, ErrorDescription = Message, PreviousLevelRunId, DataFactoryName = Resource, ExecutionStartTime = datetime_utc_to_local(StartTime, "America/Los_Angeles"), ExecutionEndTime = datetime_utc_to_local(EndTime, "America/Los_Angeles"), TimeGenerated = datetime_utc_to_local(TimeGenerated, "America/Los_Angeles");
