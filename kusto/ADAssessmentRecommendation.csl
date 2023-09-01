@@ -1,2 +1,0 @@
-ADAssessmentRecommendation
-| where TimeGenerated > ago(30d)
