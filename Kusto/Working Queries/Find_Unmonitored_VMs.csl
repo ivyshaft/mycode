@@ -1,0 +1,13 @@
+// Make unmonitored machine list
+let timeago = ago(30d);
+AzureActivity
+| where TimeGenerated > timeago
+    and _ResourceId has "microsoft.compute/virtualmachines"
+    and tolower(OperationNameValue) has "microsoft.compute/virtualmachines/start"
+    or tolower(OperationNameValue) has "microsoft.compute/virtualmachines/deallocate"
+| summarize Latest_Activity = arg_max(TimeGenerated, *) by Computer = tostring(split(_ResourceId, "/")[-1])
+| join kind=leftanti 
+    (Heartbeat
+    | where TimeGenerated > timeago
+    | summarize Latest_Heartbeats = arg_max(TimeGenerated, *) by Computer = tostring(split(_ResourceId, "/")[-1])) on Computer
+| project Unmonitored_Computers = Computer, Latest_Activity, OperationNameValue, _ResourceId
