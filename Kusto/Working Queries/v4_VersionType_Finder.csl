@@ -10,3 +10,4 @@ Heartbeat
     | extend Multiple_Versions = iff(Array_Length > 1, true, false)
     | sort by Multiple_Versions, Computer asc
     | project Computer, Multiple_Versions, Version_List
+    //| where  Version_List[0].Version != "10.20.18069.0"
