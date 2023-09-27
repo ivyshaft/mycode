@@ -1,0 +1,37 @@
+// VM Usage Report for Subscription
+let basesearch = InsightsMetrics
+    | where TimeGenerated > ago(48h)
+    | extend VMName = Computer
+//| where SubscriptionId == ""
+;
+let PercentMemory = basesearch
+    | where Namespace == "Memory"
+        and Name == "AvailableMB"
+    | extend TotalMemory = extract("[0-9]+[.]?[0-9]+", 0, Tags, typeof(real))
+    | extend PercentMemory = Val/TotalMemory * 100
+    | summarize PercentMemory = avg(PercentMemory) by VMName, _ResourceId;
+let PercentCPU = basesearch
+    | where Namespace == "Processor"
+        and Name == "UtilizationPercentage"
+    | where Namespace == "Processor"
+    | summarize PercentCPU = avg(Val) by VMName, _ResourceId;
+let DiskUsage = basesearch
+    | where Namespace == 'LogicalDisk'
+        and Name == 'FreeSpacePercentage'
+    | extend Val = 100 - Val
+    | extend Tags = strcat("{\"", split(Tags, "vm.azm.ms/")[1])
+    | extend Tags_Parsed = parse_json(Tags)
+    | evaluate bag_unpack(Tags_Parsed)
+    | summarize DiskUsage = tostring(strcat(round(avg(Val), 2), "%")) by VMName, _ResourceId, Disk = mountId
+    | extend Disks = bag_pack(Disk, DiskUsage)
+    | summarize Disks = make_bag(Disks) by VMName, _ResourceId;
+PercentCPU
+| join PercentMemory on VMName
+| join DiskUsage on VMName
+| sort by PercentMemory
+| extend 
+    PercentCPU = strcat(round(PercentCPU, 2), "%"), 
+    PercentMemory = strcat(round(PercentMemory, 2), "%"),
+    DiskUsage = Disks
+| project VMName, PercentCPU, PercentMemory, DiskUsage, _ResourceId
+| sort by VMName
