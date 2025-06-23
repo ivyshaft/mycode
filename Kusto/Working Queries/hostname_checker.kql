@@ -1,0 +1,42 @@
+// hostname checker
+// this query allows you to provide a list of machines and get a resultant row for each entry with true or false connected value
+// created by Nick Microutsicos at 06-23-2025 12:43:01 PM
+// create a basic table with hostnames to search for, default connected to false
+let hostnames = dynamic(["hostname0",
+    "hostname1",
+    "hostname2",
+    "hostname3",
+    "hostname4",
+    "hostname5",
+    "hostname6",
+    "hostname7",
+    "hostname8",
+    "hostname9"]);
+let querytable = print Connected = false 
+    | mv-expand Computer = hostnames
+    | extend tostring(Computer)
+    | project Computer, Connected;
+// query for machines which are actively reporting within the last week, create a list of those hostnames
+let connected = todynamic(
+                    toscalar(Heartbeat
+    | where TimeGenerated >= ago(7d)
+        and Category == "Azure Monitor Agent"
+    | extend Computer = tolower(Computer)
+    | extend Computer = tostring(split(Computer, ".")[0])
+    | summarize LastHeartbeat = arg_max(TimeGenerated, *) by Computer
+    | where Computer has_any(hostnames)
+    | summarize Computer = make_list(Computer))
+                );
+// create another list of machines that DO NOT appear in connected table
+let notconnected = querytable
+    | where not(Computer has_any(connected));
+// start tabular query with hostname table
+querytable
+// filter for machines that appear in the connected table
+| where Computer has_any(connected)
+// change the value of Connected for those machines to true
+| extend Connected = true
+// add in the rows of Computers that are not connected with the false value
+| union notconnected
+// sort
+| sort by Connected desc, Computer asc
