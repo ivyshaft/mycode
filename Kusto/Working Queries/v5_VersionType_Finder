@@ -1,0 +1,26 @@
+// v5 VersionType_Finder
+// Created by Nick Microutsicos
+// Creates a list of all Computers reporting to Heartbeat table
+// For each Computer, creates a list of all versions it's reporting from during selected time period
+// Normalizes output and adds an optional "Domain" column for certain filtering use-cases
+let time_ago = 30m;
+let result_limit = 10e4;
+Heartbeat
+| where TimeGenerated > ago(time_ago)
+    | extend Computer = tolower(Computer)
+    | extend Domain_Split = split(Computer, ".")
+    | extend Computer = tostring(Domain_Split[0])
+    | extend Domain_Array_Length = arraylength(Domain_Split)
+    | extend Domain = strcat_array(array_slice(Domain_Split, 1, Domain_Array_Length), ".")
+| summarize arg_max(TimeGenerated, *) by Computer, Category, Version, Domain
+    | extend Category_Version_Bag = bag_pack("Category", Category, "Version", Version, "LastHeartbeat", format_datetime(TimeGenerated, "M/dd/yyyy h:mm:ss tt"))
+    | sort by Category asc
+| summarize Version_List = make_list(Category_Version_Bag) by Computer, OSType//, Domain
+    // ADDITIONAL WHERE FILTERS HERE
+    //| where  Version_List[0].Category !contains "Azure Monitor Agent"
+        | extend Array_Length = array_length(Version_List)
+        | extend Multiple_Versions = iff(Array_Length > 1, true, false)
+        | project Computer, OSType, Multiple_Versions, Version_List//, Domain
+        | sort by OSType desc, Computer asc
+        // limit results to override "show" parameter in Log Analytics
+        | limit toint(result_limit)
