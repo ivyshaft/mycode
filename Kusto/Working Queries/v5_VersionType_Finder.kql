@@ -14,7 +14,7 @@ Heartbeat
     | extend Domain = strcat_array(array_slice(Domain_Split, 1, Domain_Array_Length), ".")
 | summarize arg_max(TimeGenerated, *) by Computer, Category, Version, Domain
     | extend Category_Version_Bag = bag_pack("Category", Category, "Version", Version, "LastHeartbeat", format_datetime(TimeGenerated, "M/dd/yyyy h:mm:ss tt"))
-    | sort by Category asc
+    | sort by Category desc
 | summarize Version_List = make_list(Category_Version_Bag) by Computer, OSType//, Domain
     // ADDITIONAL WHERE FILTERS HERE
     //| where  Version_List[0].Category !contains "Azure Monitor Agent"
